@@ -1,0 +1,15 @@
+[package]
+name = "aitios-tex"
+version = "0.1.0"
+authors = ["krachzack <hello@phstadler.com>"]
+
+[dependencies]
+aitios-sim = { git = "https://github.com/krachzack/aitios-sim.git" }
+aitios-geom = { git = "https://github.com/krachzack/aitios-geom.git" }
+aitios-surf = { git = "https://github.com/krachzack/aitios-surf.git" }
+aitios-scene = { git = "https://github.com/krachzack/aitios-scene.git" }
+image = "0.18.0"
+rayon = "1.0"
+
+[dev-dependencies]
+aitios-asset = { git = "https://github.com/krachzack/aitios-asset.git" }
