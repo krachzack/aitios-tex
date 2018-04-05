@@ -7,6 +7,7 @@ extern crate image;
 extern crate rayon;
 
 mod density;
+mod geom_tex;
 mod raster;
 mod surfel_table;
 mod uv_triangle;

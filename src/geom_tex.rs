@@ -5,8 +5,14 @@ use uv_triangle::triangle_into_uv_image_space;
 use line2d::Line2D;
 use raster::Rasterize;
 
-pub fn position_tex(entity: &Entity, width: usize, height: usize, island_bleed: usize) -> Vec<Option<Vec3>> {
-    let mut positions = vec![None; width * height];
+#[derive(Clone)]
+pub struct GeomTexel {
+    pub position: Vec3,
+    pub normal: Vec3
+}
+
+pub fn geom_tex(entity: &Entity, width: usize, height: usize, island_bleed: usize) -> Vec<Option<GeomTexel>> {
+    let mut geom_texels = vec![None; width * height];
 
     // 15 for 4096x4096, 9 for 2048x2048, 6 for 1024x1024, 3 for everything below
     //let island_bleed = (width / 1024) * 3 + 3;
@@ -30,11 +36,17 @@ pub fn position_tex(entity: &Entity, width: usize, height: usize, island_bleed: 
                 .map(|(start, end)| Line2D { start, end, stroke_width: island_bleed*2 });
 
             for l in lines {
-                l.rasterize_to_slice(&mut positions[..], width, height, |x, y|
-                    Some(t.interpolate_at(
-                        Vec3::new(x as f32, y as f32, 0.0),
-                        |v| v.world_position
-                    ))
+                l.rasterize_to_slice(&mut geom_texels[..], width, height, |x, y|
+                    Some(GeomTexel {
+                        position: t.interpolate_at(
+                            Vec3::new(x as f32, y as f32, 0.0),
+                            |v| v.world_position
+                        ),
+                        normal: t.interpolate_at(
+                            Vec3::new(x as f32, y as f32, 0.0),
+                            |v| v.world_normal
+                        )
+                    })
                 )
             }
         });
@@ -48,13 +60,19 @@ pub fn position_tex(entity: &Entity, width: usize, height: usize, island_bleed: 
     // Next, draw the insides of the triangles, the real star of the show
     uv_triangles
         .for_each(
-            |t| t.rasterize_to_slice(&mut positions[..], width, height, |x, y|
-                Some(t.interpolate_at(
-                    Vec3::new(x as f32, y as f32, 0.0),
-                    |v| v.world_position
-                ))
+            |t| t.rasterize_to_slice(&mut geom_texels[..], width, height, |x, y|
+                Some(GeomTexel {
+                    position: t.interpolate_at(
+                        Vec3::new(x as f32, y as f32, 0.0),
+                        |v| v.world_position
+                    ),
+                    normal: t.interpolate_at(
+                        Vec3::new(x as f32, y as f32, 0.0),
+                        |v| v.world_normal
+                    )
+                })
             )
         );
 
-    positions
+    geom_texels
 }

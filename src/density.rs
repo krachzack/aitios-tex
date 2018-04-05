@@ -4,7 +4,6 @@ use image::{ImageBuffer, Pixel, Rgba};
 use surf;
 use surfel_table::build_surfel_lookup_table;
 use sim::SurfelData;
-use rayon::prelude::*;
 
 type Surface = surf::Surface<surf::Surfel<Vertex, SurfelData>>;
 
