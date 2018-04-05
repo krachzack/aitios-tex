@@ -13,7 +13,7 @@ pub fn build_surfel_lookup_table<S>(entity: &Entity, surf: &Surface<S>, surfel_c
     // Given the normals of a texel and a surfel, cos(theta) must be larger than this
     // to be taken into account.
     // This avoids the back side of a thin surface to influence the front side and vice-versa.
-    const ANGLE_COS_THRESHOLD : f32 =  0.0;
+    const ANGLE_COS_THRESHOLD : f32 =  0.5;
 
     geom_texels.par_iter()
         .map(
