@@ -11,6 +11,10 @@ impl Rasterize for Line2D {
     fn rasterize<F>(&self, raster_width: usize, raster_height: usize, mut render_pixel_at: F)
         where F : FnMut(usize, usize)
     {
+        if self.stroke_width == 0 {
+            return;
+        }
+
         let stroke_delta_pos = self.stroke_width / 2;
         let stroke_delta_neg = self.stroke_width - stroke_delta_pos;
 

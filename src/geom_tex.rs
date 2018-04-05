@@ -27,29 +27,31 @@ pub fn geom_tex(entity: &Entity, width: usize, height: usize, island_bleed: usiz
     // Before drawing the triangles, draw the outlines in a thick stroke to
     // ensure there will be margins around the UV islands.
     // If there is no padding, blender will display it wrong.
-    uv_triangles
-        .for_each(|t| {
-            let verts = t.iter().map(Position::position);
-            let next_verts = t.iter().map(Position::position).cycle().skip(1);
+    if island_bleed > 0 {
+        uv_triangles
+            .for_each(|t| {
+                let verts = t.iter().map(Position::position);
+                let next_verts = t.iter().map(Position::position).cycle().skip(1);
 
-            let lines = verts.zip(next_verts)
-                .map(|(start, end)| Line2D { start, end, stroke_width: island_bleed*2 });
+                let lines = verts.zip(next_verts)
+                    .map(|(start, end)| Line2D { start, end, stroke_width: island_bleed*2 });
 
-            for l in lines {
-                l.rasterize_to_slice(&mut geom_texels[..], width, height, |x, y|
-                    Some(GeomTexel {
-                        position: t.interpolate_at(
-                            Vec3::new(x as f32, y as f32, 0.0),
-                            |v| v.world_position
-                        ),
-                        normal: t.interpolate_at(
-                            Vec3::new(x as f32, y as f32, 0.0),
-                            |v| v.world_normal
-                        )
-                    })
-                )
-            }
-        });
+                for l in lines {
+                    l.rasterize_to_slice(&mut geom_texels[..], width, height, |x, y|
+                        Some(GeomTexel {
+                            position: t.interpolate_at(
+                                Vec3::new(x as f32, y as f32, 0.0),
+                                |v| v.world_position
+                            ),
+                            normal: t.interpolate_at(
+                                Vec3::new(x as f32, y as f32, 0.0),
+                                |v| v.world_normal
+                            )
+                        })
+                    )
+                }
+            });
+    }
 
     // Cannot clone the iterator because the closures cannot be cloned, creating it again
     let uv_triangles = entity.mesh
