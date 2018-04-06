@@ -20,12 +20,7 @@ pub fn build_surfel_lookup_table<S>(entity: &Entity, surf: &Surface<S>, surfel_c
         .map(
             |g| g.as_ref().map(
                 |&GeomTexel { position, normal: texel_normal }| {
-                    let mut nearest = surf.nearest_n_indexes(position, surfel_count);
-                    nearest.retain(|&(_, idx)| {
-                        let surfel_normal = surf.samples[idx].normal();
-                        surfel_normal.dot(texel_normal) > ANGLE_COS_THRESHOLD
-                    });
-                    nearest
+                    surf.nearest_n_indexes_oriented(position, texel_normal, ANGLE_COS_THRESHOLD, surfel_count)
                 }
             ).unwrap_or_else(Vec::new)
         )
