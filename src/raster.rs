@@ -257,6 +257,6 @@ mod test {
         let ref mut fout = File::create("test_position_tex.png").unwrap();
 
         // Write the contents of this image to the Writer in PNG format.
-        image::ImageRgb8(world_positions).save(fout, image::PNG).unwrap();
+        image::ImageRgb8(world_positions).write_to(fout, image::PNG).unwrap();
     }
 }

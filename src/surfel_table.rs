@@ -1,4 +1,4 @@
-use geom::{Position, Normal, InnerSpace};
+use geom::{Position, Normal};
 use scene::Entity;
 use surf::Surface;
 use geom_tex::{GeomTexel, geom_tex};
@@ -14,6 +14,7 @@ pub fn build_surfel_lookup_table<S>(entity: &Entity, surf: &Surface<S>, surfel_c
     // Given the normals of a texel and a surfel, cos(theta) must be larger than this
     // to be taken into account.
     // This avoids the back side of a thin surface to influence the front side and vice-versa.
+    // for cos(theta) = f32::EPSILON, rotations up to almost theta = 90° are allowed
     const ANGLE_COS_THRESHOLD : f32 = EPSILON;
 
     geom_texels.par_iter()

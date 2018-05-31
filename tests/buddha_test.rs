@@ -82,7 +82,7 @@ fn buddha_test() {
         let ref mut fout = File::create(&filename).unwrap();
 
         // Write the contents of this image to the Writer in PNG format.
-        image::ImageRgba8(density_tex).save(fout, image::PNG).unwrap();
+        image::ImageRgba8(density_tex).write_to(fout, image::PNG).unwrap();
 
         let buddha_with_density_tex = Entity {
             name: "DensityBuddha".to_string(),
