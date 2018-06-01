@@ -12,18 +12,17 @@ use geom::{Vec3, prelude::*};
 ///
 /// While all maps may have different dimensions, all three must
 /// have the same aspect ratio.
-fn blend_normal_by<N, G>(normal0: &N, normal1: &N, guide: &G) -> ImageBuffer<Rgb<u8>, Vec<u8>>
-    where N : GenericImage,
-        G : GenericImage,
+pub fn blend_by<N, G>(map0: &N, map1: &N, guide: &G) -> ImageBuffer<Rgb<u8>, Vec<u8>>
+    where N : GenericImage, G : GenericImage,
         <<N as GenericImage>::Pixel as Pixel>::Subpixel : Into<f32> + 'static,
         <<G as GenericImage>::Pixel as Pixel>::Subpixel : Into<f32> + 'static
 {
-    let (normal0_width, normal0_height) = normal0.dimensions();
-    let (normal1_width, normal1_height) = normal1.dimensions();
+    let (map0_width, map0_height) = map0.dimensions();
+    let (map1_width, map1_height) = map1.dimensions();
 
     // Choose output size by largest input normal map dimensions
-    let blent_width = normal0_width.max(normal1_width);
-    let blent_height = normal0_height.max(normal1_height);
+    let blent_width = map0_width.max(map1_width);
+    let blent_height = map0_height.max(map1_height);
 
     ImageBuffer::from_fn(
         blent_width,
@@ -31,15 +30,30 @@ fn blend_normal_by<N, G>(normal0: &N, normal1: &N, guide: &G) -> ImageBuffer<Rgb
         |x, y| {
             let (u, v) = offset_to_uv(x, y, blent_width, blent_height);
 
-            let normal0 = rgb_to_normal(sample(normal0, u, v).to_rgb());
-            let normal1 = rgb_to_normal(sample(normal1, u, v).to_rgb());
+            let map0 = rgb_to_normal(sample(map0, u, v).to_rgb());
+            let map1 = rgb_to_normal(sample(map1, u, v).to_rgb());
             let alpha = pixel_to_alpha(sample(guide, u, v).to_luma());
 
-            let normal = blend_normals(normal0, normal1, alpha);
+            let normal = blend_normals(map0, map1, alpha);
 
             normal_to_rgb(normal)
         }
     )
+}
+
+/// Blends the first given normal map towards the second.
+/// The blending factors are specified by the luminosity of the
+/// corresponding pixel in the guide map.
+///
+/// While all maps may have different dimensions, all three must
+/// have the same aspect ratio.
+fn blend_normal_by<N, G>(normal0: &N, normal1: &N, guide: &G) -> ImageBuffer<Rgb<u8>, Vec<u8>>
+    where N : GenericImage,
+        G : GenericImage,
+        <<N as GenericImage>::Pixel as Pixel>::Subpixel : Into<f32> + 'static,
+        <<G as GenericImage>::Pixel as Pixel>::Subpixel : Into<f32> + 'static
+{
+    unimplemented!()
 }
 
 fn pixel_to_alpha<T>(pixel: Luma<T>) -> f32

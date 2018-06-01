@@ -11,10 +11,12 @@ mod density;
 mod geom_tex;
 mod raster;
 mod surfel_table;
+mod texcoords;
 mod uv_triangle;
 mod line2d;
 mod position_tex;
 
+pub use blend::linear::{GuidedBlend, Stop};
 pub use density::Density;
 pub use image::*;
 pub use surfel_table::build_surfel_lookup_table;
