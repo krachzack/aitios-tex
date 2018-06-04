@@ -164,10 +164,16 @@ mod test {
 
         let blent = blend.perform(&guide);
 
-        // Since edge0 is black and edge1 is white, result should be identical to guide
+        // Since edge0 is black and edge1 is white, result should be identical to guide,
+        // except for alpha channel.
         for x in 0..2 {
             for y in 0..2 {
-                assert_eq!(blent.get_pixel(x, y), guide.get_pixel(x, y));
+                let blent_pixel = blent.get_pixel(x, y);
+                let guide_pixel = guide.get_pixel(x, y);
+                // Colors should be like guide map since stop 0 is black and stop 1 is white
+                assert_eq!(blent_pixel.to_rgb(), guide_pixel.to_rgb());
+                // Except alpha which is 255 in both stops
+                assert_eq!(255, blent_pixel.channels()[3]);
             }
         }
     }

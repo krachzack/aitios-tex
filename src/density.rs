@@ -1,3 +1,7 @@
+//!
+//! Provides functionality for processing surfel data into substance density textures.
+//!
+
 use geom::{Vertex, Vec3};
 use scene::Entity;
 use image::{ImageBuffer, Pixel, Rgba};
