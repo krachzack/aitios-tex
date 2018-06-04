@@ -219,7 +219,7 @@ mod test {
     extern crate aitios_asset as asset;
 
     use super::*;
-    use geom::{Position, Texcoords, Vec2, Vec3, TupleTriangle, Interpolation, TangentSpace};
+    use geom::{Vec3, Interpolation};
     use scene::Mesh;
     use image::{self, Rgb};
     use std::fs::File;

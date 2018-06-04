@@ -24,7 +24,8 @@ pub fn sample<I : GenericImage>(image: &I, u: f32, v: f32) -> I::Pixel {
     image.get_pixel(x, y)
 }
 
-/// Makes the given UV coordinate repeat mirroring.
+/// Makes the given UV coordinate oscillate between 0 and 1, making
+/// a texture repeat and flip direction after each repetition.
 /// E.g. 1.2 is equal to 0.8, but 2.2 and -0.2 are equal to 0.2.
 /// Infinities or NAN return NAN.
 pub fn repeat_mirror(coord: f32) -> f32 {

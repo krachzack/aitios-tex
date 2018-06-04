@@ -59,6 +59,7 @@ fn blend_normal_by<N, G>(normal0: &N, normal1: &N, guide: &G) -> ImageBuffer<Rgb
 fn pixel_to_alpha<T>(pixel: Luma<T>) -> f32
     where T : Primitive + Into<f32> + 'static
 {
+    // FIXME channels4 marked for deprecation
     let (luminosity, _, _, _) = pixel.channels4();
     let luminosity = luminosity.into();
     // FIXME assuming T to be u8
@@ -70,6 +71,7 @@ fn pixel_to_alpha<T>(pixel: Luma<T>) -> f32
 fn rgb_to_normal<T>(rgb: Rgb<T>) -> Vec3
     where T: Primitive + Into<f32> + 'static
 {
+    // FIXME channels4 marked for deprecation
     let (r, g, b, _) = rgb.channels4();
     let r : f32 = r.into();
     let g : f32 = g.into();

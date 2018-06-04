@@ -1,10 +1,12 @@
 use image::{GenericImage, Rgba, ImageBuffer, Pixel, Luma, Primitive};
 use texcoords::{offset_to_uv, sample};
 
+#[derive(Debug)]
 pub struct GuidedBlend<I> {
     stops: Vec<Stop<I>>,
 }
 
+#[derive(Debug)]
 pub struct Stop<I> {
     sample: I,
     cenith: f32
@@ -21,17 +23,33 @@ impl<I> GuidedBlend<I>
         <<I as GenericImage>::Pixel as Pixel>::Subpixel : Into<f32> + 'static
 {
     pub fn new(stops: impl IntoIterator<Item = Stop<I>>) -> Self {
-        let blend = Self {
-            stops: stops.into_iter().collect()
-        };
+        let mut stops : Vec<Stop<I>> = stops.into_iter().collect();
 
-        if blend.stops.is_empty() {
+        if stops.is_empty() {
             panic!("Tried to create GuidedBlend with an empty iterator of stops, which is undefined");
         }
 
-        blend
+        if stops.iter()
+            .any(|s| s.cenith.is_infinite())
+        {
+            let ceniths = stops.iter().map(|s| s.cenith).collect::<Vec<_>>();
+            panic!("Some ceniths were NaN/Infinity during guided blend construction: {:?}", ceniths);
+        }
+
+        // Sort for fast lookup of cenith before and after
+        stops.sort_by(|a, b| {
+            a.cenith.partial_cmp(&b.cenith)
+                .unwrap() // NaN or infinite would have panicked before, comparison is safe
+        });
+
+        Self { stops }
     }
 
+    /// Blends using the given guide texture to create a new image buffer.
+    ///
+    /// The guide can have different dimensions than the stop samples.
+    /// Only the luminosity of the given guide texture is used. If it has
+    /// an alpha channel, it is ignored.
     pub fn perform<G>(&self, guide: &G) -> ImageBuffer<Rgba<u8>, Vec<u8>>
         where G : GenericImage,
             <<G as GenericImage>::Pixel as Pixel>::Subpixel : Into<f32> + 'static
@@ -94,29 +112,63 @@ impl<I> GuidedBlend<I>
 fn pixel_to_alpha<T>(pixel: Luma<T>) -> f32
     where T : Primitive + Into<f32> + 'static
 {
+    // FIXME channels4 marked for deprecation
     let (luminosity, _, _, _) = pixel.channels4();
     let luminosity = luminosity.into();
     // FIXME assuming T to be u8
-    let scale : f32 = 255.0;//P::Subpixel::max_value().into();
+    let max_luminosity : f32 = 255.0;//P::Subpixel::max_value().into();
 
-    luminosity / scale
+    luminosity / max_luminosity
 }
 
-fn blend<P : Primitive + Into<f32> + 'static>(color0: Rgba<P>, color1: Rgba<P>, alpha: f32) -> Rgba<u8> {
+fn blend<P>(color0: Rgba<P>, color1: Rgba<P>, alpha: f32) -> Rgba<u8>
+    where P : Primitive + Into<f32> + 'static
+{
     let Rgba { data: color0 } = color0;
     let Rgba { data: color1 } = color1;
 
     Rgba {
         data: [
-            ((1.0 - alpha) * (color0[0].into()) + alpha * (color1[0].into())) as u8,
-            ((1.0 - alpha) * (color0[1].into()) + alpha * (color1[1].into())) as u8,
-            ((1.0 - alpha) * (color0[2].into()) + alpha * (color1[2].into())) as u8,
-            ((1.0 - alpha) * (color0[3].into()) + alpha * (color1[3].into())) as u8
+            ((1.0 - alpha) * color0[0].into() + alpha * color1[0].into()) as u8,
+            ((1.0 - alpha) * color0[1].into() + alpha * color1[1].into()) as u8,
+            ((1.0 - alpha) * color0[2].into() + alpha * color1[2].into()) as u8,
+            ((1.0 - alpha) * color0[3].into() + alpha * color1[3].into()) as u8
         ]
     }
 }
 
 #[cfg(test)]
 mod test {
+    use super::*;
 
+    #[test]
+    fn guided_blend() {
+        let black : ImageBuffer<Rgba<u8>, _> = ImageBuffer::from_pixel(2, 2, Rgba { data: [ 0, 0, 0, 255 ] });
+        let white : ImageBuffer<Rgba<u8>, _> = ImageBuffer::from_pixel(2, 2, Rgba { data: [ 255, 255, 255, 255 ] });
+        let stops = vec![
+            Stop::new(0.0, black),
+            Stop::new(1.0, white),
+        ];
+        let blend = GuidedBlend::new(stops);
+
+        let guide : Vec<u8> = vec![
+            0_u8, 0_u8, 0_u8, 0_u8,
+            255_u8, 255_u8, 255_u8, 255_u8,
+            128_u8, 128_u8, 128_u8, 128_u8,
+            128_u8, 128_u8, 128_u8, 128_u8
+        ];
+        let guide : ImageBuffer<Rgba<u8>, Vec<u8>> = ImageBuffer::from_raw(
+            2, 2,
+            guide
+        ).unwrap();
+
+        let blent = blend.perform(&guide);
+
+        // Since edge0 is black and edge1 is white, result should be identical to guide
+        for x in 0..2 {
+            for y in 0..2 {
+                assert_eq!(blent.get_pixel(x, y), guide.get_pixel(x, y));
+            }
+        }
+    }
 }
