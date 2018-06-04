@@ -14,7 +14,6 @@ mod surfel_table;
 mod texcoords;
 mod uv_triangle;
 mod line2d;
-mod position_tex;
 
 pub use blend::linear::{GuidedBlend, Stop};
 pub use density::Density;
