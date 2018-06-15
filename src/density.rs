@@ -2,7 +2,7 @@
 //! Provides functionality for processing surfel data into substance density textures.
 //!
 
-use geom::{Vertex, Vec3};
+use geom::Vertex;
 use scene::Entity;
 use image::{ImageBuffer, Pixel, Rgba};
 use surf;
@@ -115,30 +115,6 @@ impl Density {
                 }
             }
         )
-    }
-
-    fn density_at(&self, surf: &Surface, world_position: Vec3) -> f32 {
-        // REVIEW should the lookup be limited to surfels of the same entity?
-
-        let surfels = surf.nearest_n(world_position, 4);
-
-        /*let sample_radius = surfels.iter()
-                .map(|&(dist, _)| dist)
-                .fold(NEG_INFINITY, f32::max);
-
-        // This is inspired by photon mapping, see: https://graphics.stanford.edu/courses/cs348b-00/course8.pdf
-        // > 1, characterizes the filter
-        let k = 2.7;*/
-
-        let one_over_n = (surfels.len() as f32).recip();
-
-        one_over_n * surfels.iter()
-            .map(|&(_dist, surfel)| surfel.data().substances[self.substance_idx])
-            .sum::<f32>()
-
-        /*one_over_n * surfels.iter()
-            .map(|&(dist, surfel)| (1.0 - (dist / (k * sample_radius))) * surfel.data().substances[self.substance_idx])
-            .sum::<f32>()*/
     }
 
     fn density_at_idxs(&self, surf: &Surface, close_surfels: &Vec<(f32, usize)>) -> f32 {

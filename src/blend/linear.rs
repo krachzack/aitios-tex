@@ -45,16 +45,18 @@ impl<I> GuidedBlend<I>
         Self { stops }
     }
 
-    /// Blends using the given guide texture to create a new image buffer.
+    /// Blends using the given guide texture to create a new image buffer
+    /// with the same size as the guide.
     ///
     /// The guide can have different dimensions than the stop samples.
+    ///
     /// Only the luminosity of the given guide texture is used. If it has
     /// an alpha channel, it is ignored.
     pub fn perform<G>(&self, guide: &G) -> ImageBuffer<Rgba<u8>, Vec<u8>>
         where G : GenericImage,
             <<G as GenericImage>::Pixel as Pixel>::Subpixel : Into<f32> + 'static
     {
-        let (output_width, output_height) = self.output_dimensions();
+        let (output_width, output_height) = guide.dimensions();
 
         ImageBuffer::from_fn(
             output_width,
@@ -97,15 +99,6 @@ impl<I> GuidedBlend<I>
         // If no stop has a cenith greater than the guide,
         // repeat the stop with the highest cenith
         (last_stop, last_stop)
-    }
-
-    /// Gets the dimensions of the maximum sample size as the output dimension.
-    /// Panics if no stop is defined.
-    fn output_dimensions(&self) -> (u32, u32) {
-        self.stops.iter()
-            .map(|s| s.sample.dimensions())
-            .max()
-            .unwrap()
     }
 }
 
