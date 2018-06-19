@@ -1,9 +1,22 @@
 use image::{GenericImage, Rgba, ImageBuffer, Pixel, Luma, Primitive};
 use texcoords::{offset_to_uv, sample};
+use blend::normal::blend_normals;
+
+/// Blending algorithm for use by `GuidedBlend`.
+#[derive(Debug, Clone, Copy)]
+pub enum BlendType {
+    /// Linear blending for a blend between color values.
+    Linear,
+    /// Blending by interpreting pixels as normals that are rotated.
+    /// This more accurately captures the notion of adding detail from
+    /// one normal map to another normal map.
+    Normal
+}
 
 #[derive(Debug)]
 pub struct GuidedBlend<I> {
     stops: Vec<Stop<I>>,
+    blend_type: BlendType
 }
 
 #[derive(Debug)]
@@ -12,17 +25,18 @@ pub struct Stop<I> {
     cenith: f32
 }
 
-impl<I> Stop<I> {
-    pub fn new(cenith: f32, sample: I) -> Self {
-        Self { sample, cenith }
-    }
-}
-
 impl<I> GuidedBlend<I>
     where I : GenericImage,
         <<I as GenericImage>::Pixel as Pixel>::Subpixel : Into<f32> + 'static
 {
     pub fn new(stops: impl IntoIterator<Item = Stop<I>>) -> Self {
+        Self::with_type(
+            stops,
+            BlendType::Linear
+        )
+    }
+
+    pub fn with_type(stops: impl IntoIterator<Item = Stop<I>>, blend_type: BlendType) -> Self {
         let mut stops : Vec<Stop<I>> = stops.into_iter().collect();
 
         if stops.is_empty() {
@@ -42,7 +56,7 @@ impl<I> GuidedBlend<I>
                 .unwrap() // NaN or infinite would have panicked before, comparison is safe
         });
 
-        Self { stops }
+        Self { stops, blend_type }
     }
 
     /// Blends using the given guide texture to create a new image buffer
@@ -79,7 +93,10 @@ impl<I> GuidedBlend<I>
                     (guide - edge0) / (edge1 - edge0)
                 };
 
-                blend(sample0, sample1, alpha)
+                match self.blend_type {
+                    BlendType::Linear => blend(sample0, sample1, alpha),
+                    BlendType::Normal => blend_normals(sample0, sample1, alpha)
+                }
             }
         )
     }
@@ -99,6 +116,12 @@ impl<I> GuidedBlend<I>
         // If no stop has a cenith greater than the guide,
         // repeat the stop with the highest cenith
         (last_stop, last_stop)
+    }
+}
+
+impl<I> Stop<I> {
+    pub fn new(cenith: f32, sample: I) -> Self {
+        Self { sample, cenith }
     }
 }
 
