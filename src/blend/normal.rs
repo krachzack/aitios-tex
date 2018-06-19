@@ -27,14 +27,14 @@ pub fn blend_normals<P>(normal0: Rgba<P>, normal1: Rgba<P>, alpha: f32) -> Rgba<
     normal_to_pixel(normal)
 }
 
-/// Combines two normals by reorienting the first normal towards the second
+/// Combines or layers two normals by reorienting the first normal towards the second
 /// using the approach described in this
 /// [blog post](http://blog.selfshadow.com/publications/blending-in-detail/).
 /// This captures the behavior where the second normal overlaays the base normal.
 ///
 /// The approach leaves the base normal still visible with the detail normal
 /// only adding details
-fn combine_normals<P>(base: Rgba<P>, detail: Rgba<P>) -> Rgba<u8>
+pub fn combine_normals<P>(base: Rgba<P>, detail: Rgba<P>) -> Rgba<u8>
     where P : Primitive + Into<f32> + 'static
 {
     let base = (pixel_to_normal(base) + Vec3::new(1.0, 1.0, 1.0)) / 2.0;
@@ -48,7 +48,7 @@ fn combine_normals<P>(base: Rgba<P>, detail: Rgba<P>) -> Rgba<u8>
 }
 
 /// Converts a tangent space normal map texel to a normalized tangent-space vector.
-fn pixel_to_normal<P>(texel: Rgba<P>) -> Vec3
+pub fn pixel_to_normal<P>(texel: Rgba<P>) -> Vec3
     where P : Primitive + Into<f32> + 'static
 {
     let Rgba { data } = texel;
@@ -61,7 +61,7 @@ fn pixel_to_normal<P>(texel: Rgba<P>) -> Vec3
     normal * 2.0 - Vec3::new(1.0, 1.0, 1.0)
 }
 
-fn normal_to_pixel(normal: Vec3) -> Rgba<u8> {
+pub fn normal_to_pixel(normal: Vec3) -> Rgba<u8> {
     // Map -1..1 to 0..1 and scale by bit depth
     let Vec3 { x, y, z } = (normal * 0.5 + Vec3::new(0.5, 0.5, 0.5)) * (u8::max_value() as f32);
     Rgba {

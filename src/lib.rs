@@ -15,7 +15,7 @@ mod texcoords;
 mod uv_triangle;
 mod line2d;
 
-pub use blend::linear::{GuidedBlend, Stop};
+pub use blend::*;
 pub use density::Density;
 pub use image::*;
 pub use surfel_table::build_surfel_lookup_table;
