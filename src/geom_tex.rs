@@ -18,12 +18,12 @@ pub fn geom_tex(entity: &Entity, width: usize, height: usize, island_bleed: usiz
     // 15 for 4096x4096, 9 for 2048x2048, 6 for 1024x1024, 3 for everything below
     //let island_bleed = (width / 1024) * 3 + 3;
 
-    let min_area = 0.15; // At least 15% of a pixel
+    //let min_area = 0.15; // At least 15% of a pixel
 
     let uv_triangles = entity.mesh
         .triangles()
         .map(|t| triangle_into_uv_image_space(t, width, height))
-        .filter(|t| t.area() > min_area);
+        .filter(|t| !t.is_colinear());
 
     // Before drawing the triangles, draw the outlines in a thick stroke to
     // ensure there will be margins around the UV islands.
@@ -59,7 +59,7 @@ pub fn geom_tex(entity: &Entity, width: usize, height: usize, island_bleed: usiz
     let uv_triangles = entity.mesh
         .triangles()
         .map(|t| triangle_into_uv_image_space(t, width, height))
-        .filter(|t| t.area() > min_area);
+        .filter(|t| !t.is_colinear());
 
     // Next, draw the insides of the triangles, the real star of the show
     uv_triangles
