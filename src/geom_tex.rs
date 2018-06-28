@@ -1,6 +1,5 @@
 use geom::{Vec3, Triangle, Position, Interpolation};
 use scene::{Entity, Mesh};
-use std::f32::EPSILON;
 use uv_triangle::triangle_into_uv_image_space;
 use line2d::Line2D;
 use raster::Rasterize;
@@ -9,7 +8,7 @@ use raster::Rasterize;
 pub struct GeomTexel {
     pub position: Vec3,
     pub normal: Vec3,
-    /// The ratio between the area in world space to the area in texture space.
+    // The ratio between the area in world space to the area in texture space.
     //pub scale: f32
 }
 
