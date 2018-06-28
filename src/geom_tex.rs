@@ -22,8 +22,8 @@ pub fn geom_tex(entity: &Entity, width: usize, height: usize, island_bleed: usiz
 
     let uv_triangles = entity.mesh
         .triangles()
-        .map(|t| triangle_into_uv_image_space(t, width, height))
-        .filter(|t| !t.is_colinear());
+        .filter(|t| !t.is_colinear())
+        .map(|t| triangle_into_uv_image_space(t, width, height));
 
     // Before drawing the triangles, draw the outlines in a thick stroke to
     // ensure there will be margins around the UV islands.
@@ -58,8 +58,8 @@ pub fn geom_tex(entity: &Entity, width: usize, height: usize, island_bleed: usiz
     // Cannot clone the iterator because the closures cannot be cloned, creating it again
     let uv_triangles = entity.mesh
         .triangles()
-        .map(|t| triangle_into_uv_image_space(t, width, height))
-        .filter(|t| !t.is_colinear());
+        .filter(|t| !t.is_colinear())
+        .map(|t| triangle_into_uv_image_space(t, width, height));
 
     // Next, draw the insides of the triangles, the real star of the show
     uv_triangles
