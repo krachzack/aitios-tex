@@ -8,7 +8,9 @@ use raster::Rasterize;
 #[derive(Clone)]
 pub struct GeomTexel {
     pub position: Vec3,
-    pub normal: Vec3
+    pub normal: Vec3,
+    /// The ratio between the area in world space to the area in texture space.
+    //pub scale: f32
 }
 
 pub fn geom_tex(entity: &Entity, width: usize, height: usize, island_bleed: usize) -> Vec<Option<GeomTexel>> {
@@ -17,12 +19,12 @@ pub fn geom_tex(entity: &Entity, width: usize, height: usize, island_bleed: usiz
     // 15 for 4096x4096, 9 for 2048x2048, 6 for 1024x1024, 3 for everything below
     //let island_bleed = (width / 1024) * 3 + 3;
 
-    let min_area = EPSILON;
+    let min_area = 0.05; // At least 5% of a pixel
 
     let uv_triangles = entity.mesh
         .triangles()
-        .filter(|t| t.area() > min_area)
-        .map(|t| triangle_into_uv_image_space(t, width, height));
+        .map(|t| triangle_into_uv_image_space(t, width, height))
+        .filter(|t| t.area() > min_area);
 
     // Before drawing the triangles, draw the outlines in a thick stroke to
     // ensure there will be margins around the UV islands.
@@ -46,7 +48,8 @@ pub fn geom_tex(entity: &Entity, width: usize, height: usize, island_bleed: usiz
                             normal: t.interpolate_at(
                                 Vec3::new(x as f32, y as f32, 0.0),
                                 |v| v.world_normal
-                            )
+                            ),
+                            //scale: unimplemented!("Texel-to-world scale compensation currently unimplemented")
                         })
                     )
                 }
@@ -56,8 +59,8 @@ pub fn geom_tex(entity: &Entity, width: usize, height: usize, island_bleed: usiz
     // Cannot clone the iterator because the closures cannot be cloned, creating it again
     let uv_triangles = entity.mesh
         .triangles()
-        .filter(|t| t.area() > min_area) // Should be at least half a pixel in size
-        .map(|t| triangle_into_uv_image_space(t, width, height));
+        .map(|t| triangle_into_uv_image_space(t, width, height))
+        .filter(|t| t.area() > min_area);
 
     // Next, draw the insides of the triangles, the real star of the show
     uv_triangles
@@ -71,7 +74,8 @@ pub fn geom_tex(entity: &Entity, width: usize, height: usize, island_bleed: usiz
                     normal: t.interpolate_at(
                         Vec3::new(x as f32, y as f32, 0.0),
                         |v| v.world_normal
-                    )
+                    ),
+                    //scale: unimplemented!("Texel-to-world scale compensation currently unimplemented")
                 })
             )
         );

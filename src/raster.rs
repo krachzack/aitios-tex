@@ -228,6 +228,7 @@ mod test {
 
     /// Takes the mesh triangles and draws the interpolated model positions in UV space
     /// just as in the use case where we want to synthesize a texture.
+    #[ignore]
     #[test]
     fn test_render_positions_in_uv_space() {
         let buddha = &asset::obj::load("tests/assets/buddha.obj")
