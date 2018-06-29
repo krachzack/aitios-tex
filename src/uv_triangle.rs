@@ -1,4 +1,4 @@
-use geom::{Triangle, TupleTriangle, FromVertices, TangentSpace, Texcoords, Position, Normal, Vec3, Vec2};
+use geom::{Triangle, TupleTriangle, FromVertices, Texcoords, Position, Normal, Vec3, Vec2};
 use geom::prelude::ElementWise;
 
 /// Consumes the given triangle and returns a triangle that reports the UV coordinates
@@ -35,33 +35,11 @@ pub fn triangle_into_uv_image_space<T, V>(tri: T, image_width: usize, image_heig
             v2.normal()
         );
 
-        let tex_tri_normal = TupleTriangle::new(
-            texcoords.0.extend(0.0),
-            texcoords.1.extend(0.0),
-            texcoords.2.extend(0.0)
-        ).normal();
-
-        if tex_tri_normal.z <= 0.0 {
+        if is_ccw(&texcoords) {
             (texcoords, positions, normals)
         } else {
             // Flip order if would be pointing downwards in uv space
-            (
-                (
-                    texcoords.0,
-                    texcoords.2,
-                    texcoords.1
-                ),
-                (
-                    positions.0,
-                    positions.2,
-                    positions.1
-                ),
-                (
-                    normals.0,
-                    normals.2,
-                    normals.1
-                )
-            )
+            (flip(texcoords), flip(positions), flip(normals))
         }
     };
 
@@ -70,6 +48,24 @@ pub fn triangle_into_uv_image_space<T, V>(tri: T, image_width: usize, image_heig
         UvVtx { uv_position: texcoord1, world_position: worldpos1, world_normal: worldnormal1 },
         UvVtx { uv_position: texcoord2, world_position: worldpos2, world_normal: worldnormal2 },
     )
+}
+
+/// Checks if the given tuple of 2D position represents
+/// a triangle with counter-clockwise winding order in
+/// a Y-up coordinate system.
+///
+/// Uses the shoelace method for calculating the area of
+/// arbitrary polygons that will return positive or negative
+/// area depending on winding order.
+fn is_ccw(texcoords: &(Vec2, Vec2, Vec2)) -> bool {
+    (texcoords.1.x - texcoords.0.x) * (texcoords.1.y + texcoords.0.y) +
+    (texcoords.2.x - texcoords.1.x) * (texcoords.2.y + texcoords.1.y) +
+    (texcoords.0.x - texcoords.2.x) * (texcoords.0.y + texcoords.2.y) <= 0.0
+}
+
+/// Swaps two elements in a triple to swap the order.
+fn flip<T>(tuple: (T, T, T)) -> (T, T, T) {
+    (tuple.0, tuple.2, tuple.1)
 }
 
 // Vertex that exposes uv coordinates as position, filling in 0.0 as Z coordinate
@@ -84,5 +80,32 @@ impl Position for UvVtx {
     // Triangles in UV space
     fn position(&self) -> Vec3 {
         self.uv_position.extend(0.0)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    fn ccw_coordinates() -> (Vec2, Vec2, Vec2) {
+        (Vec2::new(0.0, 0.0), Vec2::new(1.0, 0.0), Vec2::new(0.0, 1.0))
+    }
+
+    #[test]
+    fn ccw() {
+        assert!(
+            is_ccw(&ccw_coordinates()),
+            "Triangle should report as counter-clockwise."
+        );
+    }
+
+    #[test]
+    fn cw() {
+        println!("{:?}", flip(ccw_coordinates()));
+
+        assert!(
+            !is_ccw(&flip(ccw_coordinates())),
+            "Triangle should report as clockwise after flipping the counter-clockwise one."
+        );
     }
 }
