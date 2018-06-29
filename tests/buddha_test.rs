@@ -21,6 +21,7 @@ use std::rc::Rc;
 /// Minimal example of a simulation.
 /// Running on a single entity and collecting densities after each of 5 iterations,
 /// then persisting the resulting density masks.
+#[ignore]
 #[test]
 fn buddha_test() {
     let buddha = &obj::load("tests/assets/buddha.obj")
