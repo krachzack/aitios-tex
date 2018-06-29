@@ -57,9 +57,6 @@ pub fn geom_tex(entity: &Entity, width: usize, height: usize, island_bleed: usiz
     // Cannot clone the iterator because the closures cannot be cloned, creating it again
     let uv_triangles = entity.mesh
         .triangles()
-        // For triangle interiors, only select the triangles with a relevant area,
-        // that is, triangles where the vertices do not lie on the same line (or almost)
-        .filter(|t| !t.is_colinear())
         .map(|t| triangle_into_uv_image_space(t, width, height));
 
     // Next, draw the insides of the triangles, the real star of the show
