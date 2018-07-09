@@ -8,7 +8,8 @@ pub trait Rasterize {
         where F : FnMut(usize, usize);
 
     /// Renders a thing already transfomed into image space into the given slice.
-    /// The y axis is drawn flipped.
+    /// The y axis is drawn flipped, such that y = raster_height - 1 is the first line
+    /// and y = 0 is the last line in the image.
     fn rasterize_to_slice<P, F>(&self, slice: &mut [P], raster_width: usize, raster_height: usize, mut shader_fn: F)
         where F : FnMut(usize, usize) -> P
     {
@@ -19,7 +20,8 @@ pub trait Rasterize {
     }
 
     /// Renders a thing already transfomed into image space into the given image buffer.
-    /// The y axis is drawn flipped.
+    /// The y axis is drawn flipped, such that y = raster_height - 1 is the first line
+    /// and y = 0 is the last line in the image.
     fn rasterize_to_image<P, C, F>(&self, buf: &mut ImageBuffer<P, C>, shader_fn: F)
         where P: Pixel + 'static,
             C: Deref<Target = [P::Subpixel]> + DerefMut,
@@ -46,7 +48,8 @@ impl<T : Triangle> Rasterize for T {
             return; // ignore zero area triangles
         }*/
 
-        let (v1, v2, v3) = self.positions();
+        // Flip order to compensate for flipped y axis
+        let (v1, v3, v2) = self.positions();
 
         /*let (v1 , v2, v3) = (
             v1 + Vec3::new(-0.5, -0.5, 0.0),

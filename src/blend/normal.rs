@@ -65,7 +65,7 @@ pub fn normal_to_pixel(normal: Vec3) -> Rgba<u8> {
     // Map -1..1 to 0..1 and scale by bit depth
     let Vec3 { x, y, z } = (normal * 0.5 + Vec3::new(0.5, 0.5, 0.5)) * (u8::max_value() as f32);
     Rgba {
-        data: [ x as u8, y as u8, z as u8, 255 ]
+        data: [ x.round() as u8, y.round() as u8, z.round() as u8, 255 ]
     }
 }
 
@@ -73,6 +73,56 @@ pub fn normal_to_pixel(normal: Vec3) -> Rgba<u8> {
 mod test {
     use super::*;
     use image::{open, GenericImage, ImageBuffer};
+
+    #[test]
+    fn normal_rgba_conversion() {
+        let straight_normal = Vec3::new(0.0, 0.0, 1.0);
+        let straight_pixel : Rgba<u8> = Rgba { data: [ 128, 128, 255, 255 ] };
+
+        let positive_tangent_normal = Vec3::new(1.0, 0.0, 0.0);
+        let positive_tangent_pixel : Rgba<u8> = Rgba { data: [ 255, 128, 128, 255 ] };
+
+        assert_eq!(
+            normal_to_pixel(straight_normal),
+            straight_pixel
+        );
+
+        assert_eq!(
+            normal_to_pixel(positive_tangent_normal),
+            positive_tangent_pixel
+        );
+    }
+
+    #[test]
+    fn rgba_normal_conversion() {
+        let epsilon = (1.0 / 256.0) + 0.01;
+
+        {
+            let straight_normal = Vec3::new(0.0, 0.0, 1.0);
+            let straight_pixel : Rgba<u8> = Rgba { data: [ 128, 128, 255, 255 ] };
+
+            let converted = pixel_to_normal(straight_pixel);
+            let converted = [ converted.x, converted.y, converted.z ];
+
+            let expected = [ straight_normal.x, straight_normal.y, straight_normal.z ];
+
+            converted.iter().zip(expected.iter())
+                .for_each(|(x, y)| assert_abs_diff_eq!(x, y, epsilon = epsilon));
+        }
+
+        {
+            let positive_tangent_normal = Vec3::new(1.0, 0.0, 0.0);
+            let positive_tangent_pixel : Rgba<u8> = Rgba { data: [ 255, 128, 128, 255 ] };
+
+            let converted = pixel_to_normal(positive_tangent_pixel);
+            let converted = [ converted.x, converted.y, converted.z ];
+
+            let expected = [ positive_tangent_normal.x, positive_tangent_normal.y, positive_tangent_normal.z ];
+
+            converted.iter().zip(expected.iter())
+                .for_each(|(x, y)| assert_abs_diff_eq!(x, y, epsilon = epsilon));
+        }
+    }
 
     #[test]
     fn test_partial_derivative_cone_and_bumps() {

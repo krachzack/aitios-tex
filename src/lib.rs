@@ -1,10 +1,12 @@
-#[cfg_attr(test, macro_use)]
 extern crate aitios_geom as geom;
 extern crate aitios_sim as sim;
 extern crate aitios_surf as surf;
 extern crate aitios_scene as scene;
 extern crate image;
 extern crate rayon;
+#[cfg(test)]
+#[macro_use] extern crate approx;
+
 
 mod blend;
 mod density;

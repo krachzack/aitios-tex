@@ -60,7 +60,7 @@ pub fn triangle_into_uv_image_space<T, V>(tri: T, image_width: usize, image_heig
 fn is_ccw(texcoords: &(Vec2, Vec2, Vec2)) -> bool {
     (texcoords.1.x - texcoords.0.x) * (texcoords.1.y + texcoords.0.y) +
     (texcoords.2.x - texcoords.1.x) * (texcoords.2.y + texcoords.1.y) +
-    (texcoords.0.x - texcoords.2.x) * (texcoords.0.y + texcoords.2.y) >= 0.0
+    (texcoords.0.x - texcoords.2.x) * (texcoords.0.y + texcoords.2.y) <= 0.0
 }
 
 /// Swaps two elements in a triple to swap the order.
