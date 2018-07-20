@@ -40,7 +40,8 @@ impl<I> GuidedBlend<I>
     /// Blends using the given guide texture to create a new image buffer
     /// with the same size as the guide.
     ///
-    /// The guide can have different dimensions than the stop samples.
+    /// The guide can have different dimensions than the stop samples, and
+    /// the returned buffer will have the same dimensions.
     ///
     /// Only the luminosity of the given guide texture is used. If it has
     /// an alpha channel, it is ignored.
