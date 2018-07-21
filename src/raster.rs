@@ -1,48 +1,53 @@
-
 use geom::Triangle;
-use ::image::{ImageBuffer, Pixel};
+use image::{ImageBuffer, Pixel};
 use std::ops::{Deref, DerefMut};
 
 pub trait Rasterize {
     fn rasterize<F>(&self, raster_width: usize, raster_height: usize, render_pixel_at: F)
-        where F : FnMut(usize, usize);
+    where
+        F: FnMut(usize, usize);
 
     /// Renders a thing already transfomed into image space into the given slice.
     /// The y axis is drawn flipped, such that y = raster_height - 1 is the first line
     /// and y = 0 is the last line in the image.
-    fn rasterize_to_slice<P, F>(&self, slice: &mut [P], raster_width: usize, raster_height: usize, mut shader_fn: F)
-        where F : FnMut(usize, usize) -> P
+    fn rasterize_to_slice<P, F>(
+        &self,
+        slice: &mut [P],
+        raster_width: usize,
+        raster_height: usize,
+        mut shader_fn: F,
+    ) where
+        F: FnMut(usize, usize) -> P,
     {
-        self.rasterize(
-            raster_width, raster_height,
-            |x, y| slice[(raster_height - 1 - y) * raster_width + x] = shader_fn(x, y)
-        );
+        self.rasterize(raster_width, raster_height, |x, y| {
+            slice[(raster_height - 1 - y) * raster_width + x] = shader_fn(x, y)
+        });
     }
 
     /// Renders a thing already transfomed into image space into the given image buffer.
     /// The y axis is drawn flipped, such that y = raster_height - 1 is the first line
     /// and y = 0 is the last line in the image.
     fn rasterize_to_image<P, C, F>(&self, buf: &mut ImageBuffer<P, C>, shader_fn: F)
-        where P: Pixel + 'static,
-            C: Deref<Target = [P::Subpixel]> + DerefMut,
-            F : Fn(usize, usize) -> P
+    where
+        P: Pixel + 'static,
+        C: Deref<Target = [P::Subpixel]> + DerefMut,
+        F: Fn(usize, usize) -> P,
     {
         let width = buf.width() as usize;
         let height = buf.height() as usize;
-        self.rasterize(
-            width, height,
-            |x, y| buf.put_pixel(x as u32, (height - 1 - y) as u32, shader_fn(x, y))
-        );
+        self.rasterize(width, height, |x, y| {
+            buf.put_pixel(x as u32, (height - 1 - y) as u32, shader_fn(x, y))
+        });
     }
 }
 
-impl<T : Triangle> Rasterize for T {
-
+impl<T: Triangle> Rasterize for T {
     /// Fills the triangle with a top-left fill convention, similar to OpenGL.
     /// See: http://forum.devmaster.net/t/advanced-rasterization/6145
     #[allow(non_snake_case)]
     fn rasterize<F>(&self, raster_width: usize, raster_height: usize, mut render_pixel_at: F)
-        where F : FnMut(usize, usize)
+    where
+        F: FnMut(usize, usize),
     {
         /*if self.area() < 0.00000001 {
             return; // ignore zero area triangles
@@ -167,15 +172,31 @@ impl<T : Triangle> Rasterize for T {
             let last_x = raster_width as i64;
             let last_y = raster_height as i64;
 
-            if minx < 0 { minx = 0; }
-            if minx > last_x { minx = last_x; }
-            if maxx < 0 { maxx = 0; }
-            if maxx > last_x { maxx = last_x; }
+            if minx < 0 {
+                minx = 0;
+            }
+            if minx > last_x {
+                minx = last_x;
+            }
+            if maxx < 0 {
+                maxx = 0;
+            }
+            if maxx > last_x {
+                maxx = last_x;
+            }
 
-            if miny < 0 { miny = 0; }
-            if miny > last_y { miny = last_y; }
-            if maxy < 0 { maxy = 0; }
-            if maxy > last_y { maxy = last_y; }
+            if miny < 0 {
+                miny = 0;
+            }
+            if miny > last_y {
+                miny = last_y;
+            }
+            if maxy < 0 {
+                maxy = 0;
+            }
+            if maxy > last_y {
+                maxy = last_y;
+            }
         }
 
         // Half-edge constants
@@ -184,9 +205,15 @@ impl<T : Triangle> Rasterize for T {
         let mut C3 = DY31 * X3 - DX31 * Y3;
 
         // Correct for fill convention
-        if DY12 < 0 || (DY12 == 0 && DX12 > 0) { C1 += 1; }
-        if DY23 < 0 || (DY23 == 0 && DX23 > 0) { C2 += 1; }
-        if DY31 < 0 || (DY31 == 0 && DX31 > 0) { C3 += 1; }
+        if DY12 < 0 || (DY12 == 0 && DX12 > 0) {
+            C1 += 1;
+        }
+        if DY23 < 0 || (DY23 == 0 && DX23 > 0) {
+            C2 += 1;
+        }
+        if DY31 < 0 || (DY31 == 0 && DX31 > 0) {
+            C3 += 1;
+        }
 
         let mut CY1 = C1 + DX12 * (miny << 4) - DY12 * (minx << 4);
         let mut CY2 = C2 + DX23 * (miny << 4) - DY23 * (minx << 4);
@@ -222,11 +249,11 @@ mod test {
     extern crate aitios_asset as asset;
 
     use super::*;
-    use geom::{Vec3, Interpolation};
-    use scene::Mesh;
+    use geom::{Interpolation, Vec3};
     use image::{self, Rgb};
-    use std::fs::File;
+    use scene::Mesh;
     use std::f32::EPSILON;
+    use std::fs::File;
     use uv_triangle::triangle_into_uv_image_space;
 
     /// Takes the mesh triangles and draws the interpolated model positions in UV space
@@ -240,27 +267,32 @@ mod test {
         let width = 4096_usize;
         let height = 4096_usize;
 
-        let mut world_positions = ImageBuffer::from_pixel(width as u32, height as u32, Rgb { data: [0, 0, 0] });
+        let mut world_positions =
+            ImageBuffer::from_pixel(width as u32, height as u32, Rgb { data: [0, 0, 0] });
 
-        buddha.mesh.triangles()
+        buddha
+            .mesh
+            .triangles()
             .filter(|t| t.area() > EPSILON)
             .map(|t| triangle_into_uv_image_space(t, width, height))
-            .for_each(|t| t.rasterize_to_image(&mut world_positions, |x, y| {
-                let interpolated_position = t.interpolate_at(
-                    Vec3::new(x as f32, y as f32, 0.0),
-                    |v| v.world_position
-                );
-                let color = [
-                    (interpolated_position.x.fract() * 255.0) as u8,
-                    (interpolated_position.y.fract() * 255.0) as u8,
-                    (interpolated_position.z.fract() * 255.0) as u8
-                ];
-                Rgb { data: color }
-            }));
+            .for_each(|t| {
+                t.rasterize_to_image(&mut world_positions, |x, y| {
+                    let interpolated_position =
+                        t.interpolate_at(Vec3::new(x as f32, y as f32, 0.0), |v| v.world_position);
+                    let color = [
+                        (interpolated_position.x.fract() * 255.0) as u8,
+                        (interpolated_position.y.fract() * 255.0) as u8,
+                        (interpolated_position.z.fract() * 255.0) as u8,
+                    ];
+                    Rgb { data: color }
+                })
+            });
 
         let ref mut fout = File::create("test_position_tex.png").unwrap();
 
         // Write the contents of this image to the Writer in PNG format.
-        image::ImageRgb8(world_positions).write_to(fout, image::PNG).unwrap();
+        image::ImageRgb8(world_positions)
+            .write_to(fout, image::PNG)
+            .unwrap();
     }
 }

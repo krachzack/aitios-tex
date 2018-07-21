@@ -4,12 +4,13 @@ use raster::Rasterize;
 pub struct Line2D {
     pub start: Vec3,
     pub end: Vec3,
-    pub stroke_width: usize
+    pub stroke_width: usize,
 }
 
 impl Rasterize for Line2D {
     fn rasterize<F>(&self, raster_width: usize, raster_height: usize, mut render_pixel_at: F)
-        where F : FnMut(usize, usize)
+    where
+        F: FnMut(usize, usize),
     {
         if self.stroke_width == 0 {
             return;
@@ -18,20 +19,14 @@ impl Rasterize for Line2D {
         let stroke_delta_pos = self.stroke_width / 2;
         let stroke_delta_neg = self.stroke_width - stroke_delta_pos;
 
-        let from = (
-            self.start.x as i32,
-            self.start.y as i32
-        );
+        let from = (self.start.x as i32, self.start.y as i32);
 
-        let to = (
-            self.end.x as i32,
-            self.end.y as i32
-        );
+        let to = (self.end.x as i32, self.end.y as i32);
 
         rasterize_line(from, to, raster_width, raster_height, move |x, y| {
             let min_x = match x {
                 x if x <= stroke_delta_neg => 0,
-                x => x - stroke_delta_neg
+                x => x - stroke_delta_neg,
             };
             // max is exclusive
             let max_x = (x + stroke_delta_pos).min(raster_width);
@@ -39,7 +34,7 @@ impl Rasterize for Line2D {
             //let min_y = if x <= 1 { y } else { y - 1 };
             let min_y = match y {
                 y if y <= stroke_delta_neg => 0,
-                y => y - stroke_delta_neg
+                y => y - stroke_delta_neg,
             };
             let max_y = (y + stroke_delta_pos).min(raster_height);
 
@@ -59,8 +54,14 @@ impl Rasterize for Line2D {
 /// due to texture seams.
 ///
 /// Source: https://rosettacode.org/wiki/Bitmap/Bresenham%27s_line_algorithm#C
-fn rasterize_line<F>(p0: (i32, i32), p1: (i32, i32), raster_width: usize, raster_height: usize, mut render_pixel_at: F)
-        where F : FnMut(usize, usize)
+fn rasterize_line<F>(
+    p0: (i32, i32),
+    p1: (i32, i32),
+    raster_width: usize,
+    raster_height: usize,
+    mut render_pixel_at: F,
+) where
+    F: FnMut(usize, usize),
 {
     let (x0, y0) = p0;
     let (x1, y1) = p1;
@@ -78,9 +79,7 @@ fn rasterize_line<F>(p0: (i32, i32), p1: (i32, i32), raster_width: usize, raster
     let mut y = y0;
 
     loop {
-        if x >= 0 && x < (raster_width as i32) &&
-           y >= 0 && y < (raster_height as i32)
-        {
+        if x >= 0 && x < (raster_width as i32) && y >= 0 && y < (raster_height as i32) {
             render_pixel_at(x as usize, y as usize);
         }
 

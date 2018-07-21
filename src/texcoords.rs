@@ -2,7 +2,7 @@
 //! Implements operations for sampling textures.
 //!
 
-use image::{GenericImage};
+use image::GenericImage;
 use std::f32::NAN;
 
 /// Samples the closest pixel to the given UV cooridnates.
@@ -15,7 +15,7 @@ use std::f32::NAN;
 /// If the coordinate exceeds the range [0,1], a mirroring
 /// repeat scheme is applied, e.g. 1.2 is equal to 0.8,
 /// but 2.2 is equal to 0.2.
-pub fn sample<I : GenericImage>(image: &I, u: f32, v: f32) -> I::Pixel {
+pub fn sample<I: GenericImage>(image: &I, u: f32, v: f32) -> I::Pixel {
     let u = repeat_mirror(u);
     let v = repeat_mirror(v);
 
@@ -59,10 +59,7 @@ pub fn offset_to_uv(x: u32, y: u32, width: u32, height: u32) -> (f32, f32) {
     let width = width as f32;
     let height = height as f32;
 
-    (
-        (x + 0.5) / width,
-        (height - y - 0.5) / height
-    )
+    ((x + 0.5) / width, (height - y - 0.5) / height)
 }
 
 pub fn uv_to_offset(u: f32, v: f32, width: u32, height: u32) -> (u32, u32) {
@@ -73,7 +70,7 @@ pub fn uv_to_offset(u: f32, v: f32, width: u32, height: u32) -> (u32, u32) {
 
     (
         (u * width).floor() as u32,
-        ((1.0 - v) * height).floor() as u32
+        ((1.0 - v) * height).floor() as u32,
     )
 }
 
@@ -96,7 +93,7 @@ mod test {
         assert_ulps_eq!(repeat_mirror(1.2), 0.8);
         assert_ulps_eq!(repeat_mirror(2.2), 0.2);
 
-        assert!(repeat_mirror(0.0/0.0).is_nan());
-        assert!(repeat_mirror(1.0/0.0).is_nan());
+        assert!(repeat_mirror(0.0 / 0.0).is_nan());
+        assert!(repeat_mirror(1.0 / 0.0).is_nan());
     }
 }

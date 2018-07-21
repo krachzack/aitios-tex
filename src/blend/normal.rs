@@ -1,5 +1,5 @@
-use image::{Rgba, Primitive};
-use geom::{Vec3, Vec2, InnerSpace, ElementWise};
+use geom::{ElementWise, InnerSpace, Vec2, Vec3};
+use image::{Primitive, Rgba};
 
 /// Interpolates between two normals. At maximum alpha, no detail of
 /// normal0 will be retained.
@@ -8,7 +8,8 @@ use geom::{Vec3, Vec2, InnerSpace, ElementWise};
 /// blended but added together by distinguishing between base and detail
 /// normal.
 pub fn blend_normals<P>(normal0: Rgba<P>, normal1: Rgba<P>, alpha: f32) -> Rgba<u8>
-    where P : Primitive + Into<f32> + 'static
+where
+    P: Primitive + Into<f32> + 'static,
 {
     let normal0 = pixel_to_normal(normal0);
     let normal1 = pixel_to_normal(normal1);
@@ -35,21 +36,23 @@ pub fn blend_normals<P>(normal0: Rgba<P>, normal1: Rgba<P>, alpha: f32) -> Rgba<
 /// The approach leaves the base normal still visible with the detail normal
 /// only adding details
 pub fn combine_normals<P>(base: Rgba<P>, detail: Rgba<P>) -> Rgba<u8>
-    where P : Primitive + Into<f32> + 'static
+where
+    P: Primitive + Into<f32> + 'static,
 {
     let base = (pixel_to_normal(base) + Vec3::new(1.0, 1.0, 1.0)) / 2.0;
     let detail = (pixel_to_normal(detail) + Vec3::new(1.0, 1.0, 1.0)) / 2.0;
 
     let t = base * 2.0 + Vec3::new(-1.0, -1.0, 0.0);
     let u = detail.mul_element_wise(Vec3::new(-2.0, -2.0, 2.0)) + Vec3::new(1.0, 1.0, -1.0);
-    let r  = t * t.dot(u) - u * t.z;
+    let r = t * t.dot(u) - u * t.z;
 
     normal_to_pixel(r.normalize())
 }
 
 /// Converts a tangent space normal map texel to a normalized tangent-space vector.
 pub fn pixel_to_normal<P>(texel: Rgba<P>) -> Vec3
-    where P : Primitive + Into<f32> + 'static
+where
+    P: Primitive + Into<f32> + 'static,
 {
     let Rgba { data } = texel;
 
@@ -65,7 +68,7 @@ pub fn normal_to_pixel(normal: Vec3) -> Rgba<u8> {
     // Map -1..1 to 0..1 and scale by bit depth
     let Vec3 { x, y, z } = (normal * 0.5 + Vec3::new(0.5, 0.5, 0.5)) * (u8::max_value() as f32);
     Rgba {
-        data: [ x.round() as u8, y.round() as u8, z.round() as u8, 255 ]
+        data: [x.round() as u8, y.round() as u8, z.round() as u8, 255],
     }
 }
 
@@ -77,15 +80,16 @@ mod test {
     #[test]
     fn normal_rgba_conversion() {
         let straight_normal = Vec3::new(0.0, 0.0, 1.0);
-        let straight_pixel : Rgba<u8> = Rgba { data: [ 128, 128, 255, 255 ] };
+        let straight_pixel: Rgba<u8> = Rgba {
+            data: [128, 128, 255, 255],
+        };
 
         let positive_tangent_normal = Vec3::new(1.0, 0.0, 0.0);
-        let positive_tangent_pixel : Rgba<u8> = Rgba { data: [ 255, 128, 128, 255 ] };
+        let positive_tangent_pixel: Rgba<u8> = Rgba {
+            data: [255, 128, 128, 255],
+        };
 
-        assert_eq!(
-            normal_to_pixel(straight_normal),
-            straight_pixel
-        );
+        assert_eq!(normal_to_pixel(straight_normal), straight_pixel);
 
         assert_eq!(
             normal_to_pixel(positive_tangent_normal),
@@ -99,27 +103,39 @@ mod test {
 
         {
             let straight_normal = Vec3::new(0.0, 0.0, 1.0);
-            let straight_pixel : Rgba<u8> = Rgba { data: [ 128, 128, 255, 255 ] };
+            let straight_pixel: Rgba<u8> = Rgba {
+                data: [128, 128, 255, 255],
+            };
 
             let converted = pixel_to_normal(straight_pixel);
-            let converted = [ converted.x, converted.y, converted.z ];
+            let converted = [converted.x, converted.y, converted.z];
 
-            let expected = [ straight_normal.x, straight_normal.y, straight_normal.z ];
+            let expected = [straight_normal.x, straight_normal.y, straight_normal.z];
 
-            converted.iter().zip(expected.iter())
+            converted
+                .iter()
+                .zip(expected.iter())
                 .for_each(|(x, y)| assert_abs_diff_eq!(x, y, epsilon = epsilon));
         }
 
         {
             let positive_tangent_normal = Vec3::new(1.0, 0.0, 0.0);
-            let positive_tangent_pixel : Rgba<u8> = Rgba { data: [ 255, 128, 128, 255 ] };
+            let positive_tangent_pixel: Rgba<u8> = Rgba {
+                data: [255, 128, 128, 255],
+            };
 
             let converted = pixel_to_normal(positive_tangent_pixel);
-            let converted = [ converted.x, converted.y, converted.z ];
+            let converted = [converted.x, converted.y, converted.z];
 
-            let expected = [ positive_tangent_normal.x, positive_tangent_normal.y, positive_tangent_normal.z ];
+            let expected = [
+                positive_tangent_normal.x,
+                positive_tangent_normal.y,
+                positive_tangent_normal.z,
+            ];
 
-            converted.iter().zip(expected.iter())
+            converted
+                .iter()
+                .zip(expected.iter())
                 .for_each(|(x, y)| assert_abs_diff_eq!(x, y, epsilon = epsilon));
         }
     }
@@ -134,13 +150,17 @@ mod test {
 
         assert_eq!(cone.dimensions(), bumpy.dimensions());
 
-        let black = Rgba { data: [0, 0, 0, 255] };
+        let black = Rgba {
+            data: [0, 0, 0, 255],
+        };
 
         let mut inbetween = ImageBuffer::from_pixel(cone.width(), cone.height(), black);
-        inbetween.pixels_mut()
+        inbetween
+            .pixels_mut()
             .zip(cone.pixels().zip(bumpy.pixels()))
             .for_each(|(t, ((_, _, n0), (_, _, n1)))| *t = blend_normals(n0, n1, 0.5));
-        inbetween.save("tests/generated/normal_cone_bumpy_blent_pd.png")
+        inbetween
+            .save("tests/generated/normal_cone_bumpy_blent_pd.png")
             .expect("Result of normal blending could not be written");
     }
 
@@ -152,14 +172,18 @@ mod test {
         let bumpy = open("tests/assets/normal_bumpy.png")
             .expect("Could not load cone-like normal map for normal blending test");
 
-        let black = Rgba { data: [0, 0, 0, 255] };
+        let black = Rgba {
+            data: [0, 0, 0, 255],
+        };
 
         let mut inbetween = ImageBuffer::from_pixel(cone.width(), cone.height(), black);
-        inbetween.pixels_mut()
+        inbetween
+            .pixels_mut()
             .zip(cone.pixels().zip(bumpy.pixels()))
             .for_each(|(t, ((_, _, n0), (_, _, n1)))| *t = combine_normals(n0, n1));
 
-        inbetween.save("tests/generated/normal_cone_bumpy_combined_rnm.png")
+        inbetween
+            .save("tests/generated/normal_cone_bumpy_combined_rnm.png")
             .expect("Result of normal combination could not be written");
     }
 }
