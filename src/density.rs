@@ -2,13 +2,13 @@
 //! Provides functionality for processing surfel data into substance density textures.
 //!
 
+use self::SubstanceFilter::*;
 use geom::Vertex;
 use image::{ImageBuffer, Pixel, Rgba};
 use scene::Entity;
 use sim::SurfelData;
 use surf;
 use surfel_table::build_surfel_lookup_table;
-use self::SubstanceFilter::*;
 
 type Surface = surf::Surface<surf::Surfel<Vertex, SurfelData>>;
 
@@ -17,7 +17,7 @@ pub enum SubstanceFilter {
     Average,
     /// When combining n surfels into a texel do a weighted average, give the nearest
     /// texel the highest influence, gradually decreasing until the last surfel with influence 0
-    Attenuate
+    Attenuate,
 }
 
 pub struct Density {
@@ -31,7 +31,7 @@ pub struct Density {
     undefined_color: Rgba<u8>,
     min_color: Rgba<u8>,
     max_color: Rgba<u8>,
-    filtering: SubstanceFilter
+    filtering: SubstanceFilter,
 }
 
 impl Density {
@@ -45,7 +45,7 @@ impl Density {
         undefined_color: Rgba<u8>,
         min_color: Rgba<u8>,
         max_color: Rgba<u8>,
-        filtering: SubstanceFilter
+        filtering: SubstanceFilter,
     ) -> Self {
         Density {
             substance_idx,
@@ -125,7 +125,8 @@ impl Density {
         let inv_distance_sum = distances.clone().sum::<f32>().recip();
         let scaled_weights = distances.map(|d| 1.0 - inv_distance_sum * d);
 
-        close_surfels.iter()
+        close_surfels
+            .iter()
             .map(|&(_, surfel_idx)| surf.samples[surfel_idx].data().substances[self.substance_idx])
             .zip(scaled_weights)
             .map(|(substance, weight)| substance * weight)

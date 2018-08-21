@@ -18,6 +18,6 @@ mod texcoords;
 mod uv_triangle;
 
 pub use blend::*;
-pub use density::Density;
+pub use density::{Density, SubstanceFilter};
 pub use image::*;
 pub use surfel_table::build_surfel_lookup_table;
