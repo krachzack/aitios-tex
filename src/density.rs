@@ -14,10 +14,10 @@ type Surface = surf::Surface<surf::Surfel<Vertex, SurfelData>>;
 
 pub enum SubstanceFilter {
     /// When combining n surfels into a texel, take the unweighted average of substance.
-    Average,
+    Flat,
     /// When combining n surfels into a texel do a weighted average, give the nearest
     /// texel the highest influence, gradually decreasing until the last surfel with influence 0
-    Attenuate,
+    Smooth,
 }
 
 pub struct Density {
@@ -101,8 +101,8 @@ impl Density {
                 None
             } else {
                 Some(match self.filtering {
-                    Average => self.density_at_idxs(surf, surfels),
-                    Attenuate => self.density_weighted_avg(surf, surfels),
+                    Flat => self.density_at_idxs(surf, surfels),
+                    Smooth => self.density_weighted_avg(surf, surfels),
                 })
             };
 
