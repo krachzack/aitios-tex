@@ -8,8 +8,17 @@ use scene::Entity;
 use sim::SurfelData;
 use surf;
 use surfel_table::build_surfel_lookup_table;
+use self::SubstanceFilter::*;
 
 type Surface = surf::Surface<surf::Surfel<Vertex, SurfelData>>;
+
+pub enum SubstanceFilter {
+    /// When combining n surfels into a texel, take the unweighted average of substance.
+    Average,
+    /// When combining n surfels into a texel do a weighted average, give the nearest
+    /// texel the highest influence, gradually decreasing until the last surfel with influence 0
+    Attenuate
+}
 
 pub struct Density {
     substance_idx: usize,
@@ -22,6 +31,7 @@ pub struct Density {
     undefined_color: Rgba<u8>,
     min_color: Rgba<u8>,
     max_color: Rgba<u8>,
+    filtering: SubstanceFilter
 }
 
 impl Density {
@@ -35,6 +45,7 @@ impl Density {
         undefined_color: Rgba<u8>,
         min_color: Rgba<u8>,
         max_color: Rgba<u8>,
+        filtering: SubstanceFilter
     ) -> Self {
         Density {
             substance_idx,
@@ -46,6 +57,7 @@ impl Density {
             undefined_color,
             min_color,
             max_color,
+            filtering,
         }
     }
 
@@ -74,37 +86,7 @@ impl Density {
                 self.island_bleed,
             ),
         )
-
-        // REVIEW if this cannot guarantee correct same output as input order,
-        //        this does not work
-        /*let densities : Vec<_> = position_tex.par_iter()
-            .map(|p| {
-                p.map(|p| {
-                    self.density_at(surf, p)
-                })
-            })
-            .collect();
-
-        ImageBuffer::from_fn(
-            self.tex_width as u32,
-            self.tex_height as u32,
-            |x, y| {
-                let x = x as usize;
-                let y = y as usize;
-                match densities[y * self.tex_width + x] {
-                    None => self.undefined_color,
-                    Some(density) => {
-                        let alpha = density.max(self.min_density).min(self.max_density) /
-                                    (self.max_density - self.min_density);
-
-                        self.min_color.map2(
-                            &self.max_color,
-                            |c0, c1| ((1.0 - alpha) * (c0 as f32) + alpha * (c1 as f32)) as u8
-                        )
-                    }
-                }
-            }
-        )*/    }
+    }
 
     pub fn collect_with_table(
         &self,
@@ -118,7 +100,10 @@ impl Density {
             let density = if surfels.is_empty() {
                 None
             } else {
-                Some(self.density_at_idxs(surf, surfels))
+                Some(match self.filtering {
+                    Average => self.density_at_idxs(surf, surfels),
+                    Attenuate => self.density_weighted_avg(surf, surfels),
+                })
             };
 
             match density {
@@ -135,16 +120,19 @@ impl Density {
         })
     }
 
+    fn density_weighted_avg(&self, surf: &Surface, close_surfels: &Vec<(f32, usize)>) -> f32 {
+        let distances = close_surfels.iter().map(|&(dist, _)| dist);
+        let inv_distance_sum = distances.clone().sum::<f32>().recip();
+        let scaled_weights = distances.map(|d| 1.0 - inv_distance_sum * d);
+
+        close_surfels.iter()
+            .map(|&(_, surfel_idx)| surf.samples[surfel_idx].data().substances[self.substance_idx])
+            .zip(scaled_weights)
+            .map(|(substance, weight)| substance * weight)
+            .sum::<f32>()
+    }
+
     fn density_at_idxs(&self, surf: &Surface, close_surfels: &Vec<(f32, usize)>) -> f32 {
-        // REVIEW should the lookup be limited to surfels of the same entity?
-        /*let sample_radius = close_surfels.iter()
-                .map(|&(dist, _)| dist)
-                .fold(NEG_INFINITY, f32::max);*/
-
-        // This is inspired by photon mapping, see: https://graphics.stanford.edu/courses/cs348b-00/course8.pdf
-        // > 1, characterizes the filter
-        //let k = 2.7;
-
         let one_over_n = (close_surfels.len() as f32).recip();
 
         one_over_n
@@ -152,9 +140,27 @@ impl Density {
                 .iter()
                 .map(|&(_dist, idx)| surf.samples[idx].data().substances[self.substance_idx])
                 .sum::<f32>()
-
-        /*one_over_n * surfels.iter()
-            .map(|&(dist, surfel)| (1.0 - (dist / (k * sample_radius))) * surfel.data().substances[self.substance_idx])
-            .sum::<f32>()*/
     }
 }
+
+/*
+    use std::f32::{INFINITY, NEG_INFINITY};
+
+    fn density_filtered_min_max(&self, surf: &Surface, close_surfels: &Vec<(f32, usize)>) -> f32 {
+        let distances = close_surfels.iter().map(|&(dist, _)| dist);
+
+        let (r_min, r_max) = distances.clone().fold(
+            (INFINITY, NEG_INFINITY),
+            |(min, max), next| (min.min(next), max.max(next))
+        );
+        let weights = distances.map(|r| 1.0 - (r - r_min) / (r - r_max));
+        
+        let one_over_weights_sum = weights.clone().sum::<f32>().recip();
+        let scaled_weights = weights.map(|w| one_over_weights_sum * w);
+
+        close_surfels.iter()
+            .map(|&(_, surfel_idx)| surf.samples[surfel_idx].data().substances[self.substance_idx])
+            .zip(scaled_weights)
+            .map(|(substance, weight)| substance * weight)
+            .sum::<f32>()
+    }*/
