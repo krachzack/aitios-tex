@@ -138,11 +138,11 @@ impl Density {
             .sum::<f32>()*/
         let distances = close_surfels.iter().map(|&(dist, _)| dist);
 
-        let (r_min, r_max) = distances.clone().fold(
+        let (_r_min, r_max) = distances.clone().fold(
             (INFINITY, NEG_INFINITY),
             |(min, max), next| (min.min(next), max.max(next))
         );
-        let weights = distances.map(|r| 1.0 - (r - r_min) / (r - r_max));
+        let weights = distances.map(|r| 1.0 - r / (r - r_max));
         
         let one_over_weights_sum = weights.clone().sum::<f32>().recip();
         let scaled_weights = weights.map(|w| one_over_weights_sum * w);
