@@ -9,7 +9,7 @@ use scene::Entity;
 use sim::SurfelData;
 use surf;
 use surfel_table::build_surfel_lookup_table;
-use std::f32::{INFINITY, NEG_INFINITY};
+use std::f32::NEG_INFINITY;
 
 type Surface = surf::Surface<surf::Surfel<Vertex, SurfelData>>;
 
@@ -122,28 +122,9 @@ impl Density {
     }
 
     fn density_weighted_avg(&self, surf: &Surface, close_surfels: &Vec<(f32, usize)>) -> f32 {
-        /*let distances = close_surfels.iter().map(|&(dist, _)| dist);
-        let max_distance = distances.clone().fold(f32::NEG_INFINITY, |acc, dist| acc.max(dist));
-        let weights = distances.map(|dist| max_distance - dist)
-        
-
-        let inv_distance_sum = distances.clone().sum::<f32>().recip();
-        let scaled_weights = distances.map(|d| 1.0 - inv_distance_sum * d);
-
-        close_surfels
-            .iter()
-            .map(|&(_, surfel_idx)| surf.samples[surfel_idx].data().substances[self.substance_idx])
-            .zip(scaled_weights)
-            .map(|(substance, weight)| substance * weight)
-            .sum::<f32>()*/
         let distances = close_surfels.iter().map(|&(dist, _)| dist);
-
-        let (_r_min, r_max) = distances.clone().fold(
-            (INFINITY, NEG_INFINITY),
-            |(min, max), next| (min.min(next), max.max(next))
-        );
-        let weights = distances.map(|r| 1.0 - r / (r - r_max));
-        
+        let dist_max = distances.clone().fold(NEG_INFINITY, f32::max);
+        let weights = distances.map(|d| dist_max - d); // Maybe ((dist_max - d) / dist_max).pow(2)
         let one_over_weights_sum = weights.clone().sum::<f32>().recip();
         let scaled_weights = weights.map(|w| one_over_weights_sum * w);
 
