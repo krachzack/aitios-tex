@@ -98,12 +98,13 @@ impl Density {
             let x = x as usize;
             let y = y as usize;
             let surfels = &table[y * self.tex_width + x];
-            let density = if surfels.is_empty() {
-                None
-            } else {
-                Some(match self.filtering {
+            let density = match surfels.len() {
+                0 => None,
+                // Single surfel, no filtering
+                1 => Some(surf.samples[surfels[0].1].data().substances[self.substance_idx]),
+                _ => Some(match self.filtering {
                     Flat => self.density_at_idxs(surf, surfels),
-                    Smooth => self.density_weighted_avg(surf, surfels),
+                    Smooth => self.inv_distance_weighted(surf, surfels),
                 })
             };
 
@@ -121,18 +122,20 @@ impl Density {
         })
     }
 
-    fn density_weighted_avg(&self, surf: &Surface, close_surfels: &Vec<(f32, usize)>) -> f32 {
-        let distances = close_surfels.iter().map(|&(dist, _)| dist);
-        let dist_max = distances.clone().fold(NEG_INFINITY, f32::max);
-        let weights = distances.map(|d| dist_max - d); // Maybe ((dist_max - d) / dist_max).pow(2)
+    fn weighted_avg(&self, surf: &Surface, close_surfels: &Vec<(f32, usize)>, weights: impl Clone + Iterator<Item = f32>) -> f32 {
         let one_over_weights_sum = weights.clone().sum::<f32>().recip();
         let scaled_weights = weights.map(|w| one_over_weights_sum * w);
-
         close_surfels.iter()
             .map(|&(_, surfel_idx)| surf.samples[surfel_idx].data().substances[self.substance_idx])
             .zip(scaled_weights)
             .map(|(substance, weight)| substance * weight)
             .sum::<f32>()
+    }
+
+    fn inv_distance_weighted(&self, surf: &Surface, close_surfels: &Vec<(f32, usize)>) -> f32 {
+        // Super expensive, running sqrt twice
+        let weights = close_surfels.iter().map(|&(dist, _)| dist.sqrt().recip());
+        self.weighted_avg(surf, close_surfels, weights)
     }
 
     fn density_at_idxs(&self, surf: &Surface, close_surfels: &Vec<(f32, usize)>) -> f32 {
