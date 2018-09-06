@@ -23,7 +23,7 @@ where
     // to be taken into account.
     // This avoids the back side of a thin surface to influence the front side and vice-versa.
     // for cos(theta) = f32::EPSILON, rotations up to almost theta = 90° are allowed
-    const ANGLE_COS_THRESHOLD: f32 = -2.0; // TEST disabling check, reset to EPSILON later
+    const ANGLE_COS_THRESHOLD: f32 = EPSILON;
 
     geom_texels
         .par_iter()
