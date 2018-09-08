@@ -104,7 +104,7 @@ impl Density {
                 1 => Some(surf.samples[surfels[0].1].data().substances[self.substance_idx]),
                 _ => Some(match self.filtering {
                     Flat => self.density_at_idxs(surf, surfels),
-                    Smooth => self.inv_distance_weighted(surf, surfels),
+                    Smooth => self.dist_sqr_ratio_weighted(surf, surfels),
                 })
             };
 
@@ -131,12 +131,25 @@ impl Density {
             .map(|(substance, weight)| substance * weight)
             .sum::<f32>()
     }
+    
+    
+    fn dist_sqr_ratio_weighted(&self, surf: &Surface, close_surfels: &Vec<(f32, usize)>) -> f32 {
+        // The maximally distant surfel still has some influence, 
+        const MIN_WEIGHT : f32 = 1.0;
+        // If a surfel completely coincides with the texel position, it has MIN_WEIGHT+RANGE influence
+        const RANGE : f32 = 5.0;
+        let dists = close_surfels.iter().map(|&(dist, _)| dist);
+        let max_dist = dists.clone().fold(NEG_INFINITY, f32::max);
+        let max_dist_inv = max_dist.recip();
+        let weights = dists.map(|d| (max_dist - d) * max_dist_inv * RANGE + MIN_WEIGHT);
+        self.weighted_avg(surf, close_surfels, weights)
+    }
 
-    fn inv_distance_weighted(&self, surf: &Surface, close_surfels: &Vec<(f32, usize)>) -> f32 {
+    /*fn inv_distance_weighted(&self, surf: &Surface, close_surfels: &Vec<(f32, usize)>) -> f32 {
         // Super expensive, running sqrt twice
         let weights = close_surfels.iter().map(|&(dist, _)| dist.sqrt().recip());
         self.weighted_avg(surf, close_surfels, weights)
-    }
+    }*/
 
     fn density_at_idxs(&self, surf: &Surface, close_surfels: &Vec<(f32, usize)>) -> f32 {
         let one_over_n = (close_surfels.len() as f32).recip();
